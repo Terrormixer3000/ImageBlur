@@ -15,7 +15,11 @@ fi
 
 mkdir -p "$DIST_DIR"
 
-swift build "${EXTRA_BUILD_FLAGS[@]}" -c release
+if ((${#EXTRA_BUILD_FLAGS[@]} > 0)); then
+  swift build "${EXTRA_BUILD_FLAGS[@]}" -c release
+else
+  swift build -c release
+fi
 "$ROOT_DIR/scripts/assemble_app.sh" release "$DIST_DIR"
 "$ROOT_DIR/scripts/configure_sparkle.sh" "$DIST_DIR/ImageBlur.app"
 
