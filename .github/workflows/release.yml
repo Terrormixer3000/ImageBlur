@@ -56,23 +56,26 @@ jobs:
       - name: Create GitHub Release and upload asset
         uses: softprops/action-gh-release@v2
         with:
-          name: "ImageBlur ${{ env.VERSION }}"
+          name: "ImageBlur ${{ github.ref_name }}"
           body: |
-            ## ImageBlur ${{ env.VERSION }}
+            # ImageBlur ${{ github.ref_name }}
 
-            ### Installation
+            ImageBlur is a native macOS app for selectively pixelating sensitive image regions without changing the original image dimensions or file format.
+
+            ## Installation
             1. Download **${{ env.ARCHIVE_NAME }}** below.
-            2. Open the disk image and drag **ImageBlur.app** to `/Applications`.
-            3. On first launch, right-click the app and choose **Open** if macOS blocks it.
+            2. Open the disk image.
+            3. Drag **ImageBlur.app** to your `/Applications` folder.
+            4. On first launch, right-click the app and choose **Open** if macOS blocks it.
 
-            ### Updates
-            Automatic updates are provided through Sparkle in packaged releases.
+            ## Updates
+            Future updates are delivered automatically through the built-in updater (Sparkle).
             You can also check manually via **ImageBlur → Check for Updates…**.
 
-            ### Requirements
+            ## Requirements
             - macOS 14 or later
 
-            ### Changes
+            ## Changes
             See the [commit history](https://github.com/${{ github.repository }}/commits/${{ github.ref_name }}) for details.
           files: ${{ env.ARCHIVE_PATH }}
           draft: false
