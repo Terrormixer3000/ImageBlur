@@ -1,0 +1,31 @@
+# macOS
+.DS_Store
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Package.resolved
+
+# Local caches
+.cache/
+.sourcekit-lsp/
+
+# Xcode
+DerivedData/
+*.xcworkspace
+*.xcodeproj/project.xcworkspace/
+*.xcodeproj/xcuserdata/
+*.xcuserdatad/
+*.xcuserstate
+
+# App bundles and archives
+*.app
+*.dSYM
+*.dSYM.zip
+*.ipa
+*.xcarchive
+
+# Logs and temp files
+*.log
+*.tmp
+*.swp
