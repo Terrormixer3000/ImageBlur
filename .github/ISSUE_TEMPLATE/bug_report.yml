@@ -1,0 +1,57 @@
+name: Bug report
+description: Report a reproducible problem in ImageBlur
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. Please provide enough detail to reproduce the problem.
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: Describe the bug and the visible impact.
+      placeholder: The app crashes when I rotate an ellipse after zooming in.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: List the exact steps.
+      placeholder: |
+        1. Open an image
+        2. Add a rectangle
+        3. Zoom to 200%
+        4. Drag the rotation handle
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: dropdown
+    id: build_type
+    attributes:
+      label: How did you run the app?
+      options:
+        - GitHub release build
+        - Built locally with swift run
+        - Built locally from Xcode
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version
+      placeholder: macOS 15.0
+  - type: textarea
+    id: notes
+    attributes:
+      label: Additional context
+      description: Logs, screenshots, exported file details, or related notes.

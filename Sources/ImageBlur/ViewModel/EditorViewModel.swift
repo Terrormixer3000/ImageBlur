@@ -4,11 +4,13 @@ import CoreGraphics
 import Foundation
 import UniformTypeIdentifiers
 
+/// Enough editor state to register reversible undo operations.
 struct EditorSnapshot {
     var regions: [BlurRegion]
     var selectedRegionID: UUID?
 }
 
+/// Owns the editor state, image lifecycle, preview rendering, and undo integration.
 @MainActor
 final class EditorViewModel: ObservableObject {
     @Published private(set) var document: ImageDocument?
@@ -66,7 +68,7 @@ final class EditorViewModel: ObservableObject {
 
         let panel = NSSavePanel()
         panel.allowedContentTypes = [UTType(document.typeIdentifier as String)].compactMap { $0 }
-        panel.nameFieldStringValue = "\(document.fileName)-blurred.\(document.fileExtension)"
+        panel.nameFieldStringValue = "\(document.fileName)-\(localized("export.filename.suffix")).\(document.fileExtension)"
 
         guard panel.runModal() == .OK, let url = panel.url else {
             return false
@@ -92,6 +94,7 @@ final class EditorViewModel: ObservableObject {
 
     @discardableResult
     func openImageReplacingCurrentIfNeeded(from url: URL) -> Bool {
+        // The current image is only replaced after the unsaved-changes prompt resolves.
         guard confirmReplacementIfNeeded() else {
             return false
         }
@@ -147,10 +150,12 @@ final class EditorViewModel: ObservableObject {
             selectedRegionID = nil
         }
         refreshPreview()
-        registerUndo(from: before, actionName: "Region löschen")
+        registerUndo(from: before, actionName: localized("undo.delete-region"))
     }
 
     func beginPixelationChange() {
+        // Slider drags can emit many intermediate values, so capture one undo snapshot
+        // at the start and commit it once editing ends.
         pixelationChangeSnapshot = snapshot()
     }
 
@@ -170,7 +175,7 @@ final class EditorViewModel: ObservableObject {
 
         pixelationChangeSnapshot = nil
         if before.regions != regions {
-            registerUndo(from: before, actionName: "Pixelation ändern")
+            registerUndo(from: before, actionName: localized("undo.change-pixelation"))
         }
     }
 
@@ -187,7 +192,7 @@ final class EditorViewModel: ObservableObject {
         registerUndo(from: before, actionName: actionName)
     }
 
-    func addRegion(_ region: BlurRegion, actionName: String = "Region hinzufügen") {
+    func addRegion(_ region: BlurRegion, actionName: String = localized("undo.add-region")) {
         let before = snapshot()
         regions.append(region)
         selectedRegionID = region.id
@@ -242,13 +247,15 @@ final class EditorViewModel: ObservableObject {
             return true
         }
 
+        // The app exports edited copies instead of saving in place, so "save" here means
+        // opening the existing export flow before the current document is replaced.
         let alert = NSAlert()
         alert.alertStyle = .warning
-        alert.messageText = "Ungespeicherte Änderungen"
-        alert.informativeText = "Du hast Änderungen am aktuellen Bild, die noch nicht exportiert wurden. Möchtest du sie speichern, bevor ein anderes Bild geöffnet wird?"
-        alert.addButton(withTitle: "Speichern…")
-        alert.addButton(withTitle: "Verwerfen")
-        alert.addButton(withTitle: "Abbrechen")
+        alert.messageText = localized("unsaved-changes.title")
+        alert.informativeText = localized("unsaved-changes.message")
+        alert.addButton(withTitle: localized("unsaved-changes.save"))
+        alert.addButton(withTitle: localized("unsaved-changes.discard"))
+        alert.addButton(withTitle: localized("unsaved-changes.cancel"))
 
         switch alert.runModal() {
         case .alertFirstButtonReturn:

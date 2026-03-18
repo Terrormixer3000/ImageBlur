@@ -1,5 +1,6 @@
 import SwiftUI
 
+/// Tracks the current pointer interaction so dragging can be interpreted consistently.
 private enum CanvasAction {
     case none
     case panning(initialPan: CGSize)
@@ -10,8 +11,10 @@ private enum CanvasAction {
     case drawingLasso(points: [CGPoint])
 }
 
+/// Interactive image canvas that translates view gestures into image-space edits.
 struct EditorCanvasView: View {
     @ObservedObject var viewModel: EditorViewModel
+    @ObservedObject private var localization = LocalizationManager.shared
 
     @State private var canvasAction: CanvasAction = .none
     @State private var draftRegion: BlurRegion?
@@ -42,6 +45,8 @@ struct EditorCanvasView: View {
                     regionOverlay(in: imageFrame)
 
                     if let draftRegion {
+                        // Draft overlays are drawn from the same image-space geometry
+                        // as persisted regions so preview and export stay aligned.
                         let path = Path(draftRegion.transformedPath())
                             .applying(imageToViewTransform(for: imageFrame, imageSize: document.size))
                         path
@@ -60,14 +65,16 @@ struct EditorCanvasView: View {
 
     private var emptyState: some View {
         VStack(spacing: 14) {
+            let _ = localization.language
+
             Image(systemName: "photo.on.rectangle.angled")
                 .font(.system(size: 40))
                 .foregroundStyle(.secondary)
 
-            Text("Bild hierhin ziehen oder über \"Öffnen\" laden")
+            Text(localized("canvas.drop-image"))
                 .font(.title3.weight(.semibold))
 
-            Text("Mehrere drehbare Verpixelungsbereiche werden nicht-destruktiv bearbeitet.")
+            Text(localized("canvas.non-destructive"))
                 .foregroundStyle(.secondary)
         }
     }
@@ -117,6 +124,8 @@ struct EditorCanvasView: View {
             imageSize: viewModel.document?.size ?? .zero
         )
 
+        // Rotation and delete handles are kept in view space so they remain easy to hit
+        // even when the region is small or partially outside the image bounds.
         Circle()
             .fill(Color.orange)
             .frame(width: rotationHandleSize, height: rotationHandleSize)
@@ -204,6 +213,8 @@ struct EditorCanvasView: View {
                         return
                     }
 
+                    // Only append points once the pointer has moved enough to avoid
+                    // producing huge freehand paths full of near-duplicate vertices.
                     if points.last.map({ hypot($0.x - currentPoint.x, $0.y - currentPoint.y) > 2 }) ?? true {
                         var updatedPoints = points
                         updatedPoints.append(currentPoint)
@@ -218,18 +229,21 @@ struct EditorCanvasView: View {
 
                 switch canvasAction {
                 case .moving(_, _, let before):
-                    viewModel.commitChange(from: before, actionName: "Region verschieben")
+                    viewModel.commitChange(from: before, actionName: localized("undo.move-region"))
                 case .resizing(_, _, _, let before):
-                    viewModel.commitChange(from: before, actionName: "Region skalieren")
+                    viewModel.commitChange(from: before, actionName: localized("undo.resize-region"))
                 case .rotating(_, _, _, let before):
-                    viewModel.commitChange(from: before, actionName: "Region drehen")
+                    viewModel.commitChange(from: before, actionName: localized("undo.rotate-region"))
                 case .drawingRect(_, let shape):
                     if let finalRegion = draftRegion, finalRegion.rect.width > 4, finalRegion.rect.height > 4 {
-                        viewModel.addRegion(finalRegion, actionName: shape == .rectangle ? "Rechteck hinzufügen" : "Ellipse hinzufügen")
+                        viewModel.addRegion(
+                            finalRegion,
+                            actionName: shape == .rectangle ? localized("undo.add-rectangle") : localized("undo.add-ellipse")
+                        )
                     }
                 case .drawingLasso(let points):
                     if points.count > 2, let region = lassoDraft(from: points) {
-                        viewModel.addRegion(region, actionName: "Lasso hinzufügen")
+                        viewModel.addRegion(region, actionName: localized("undo.add-lasso"))
                     }
                 case .panning, .none:
                     break
@@ -261,6 +275,8 @@ struct EditorCanvasView: View {
     private func magnifyGesture() -> some Gesture {
         MagnifyGesture()
             .onChanged { value in
+                // Use the zoom from the start of the pinch so magnification feels stable
+                // instead of multiplying repeatedly against already-updated values.
                 let startZoom = magnifyStartZoom ?? viewModel.zoom
                 if magnifyStartZoom == nil {
                     magnifyStartZoom = startZoom
@@ -310,6 +326,8 @@ struct EditorCanvasView: View {
                     imageSize: imageSize
                 )
                 if hypot(rotationHandlePoint.x - value.startLocation.x, rotationHandlePoint.y - value.startLocation.y) <= rotationHandleSize {
+                    // Rotation is initialized in beginRotationIfNeeded so the same hit test
+                    // works even if the handle is slightly outside the image frame.
                     return
                 }
 
@@ -367,6 +385,8 @@ struct EditorCanvasView: View {
             return false
         }
 
+        // Clicking the rotation handle should always behave like selection mode,
+        // even if another creation tool is currently active.
         viewModel.activeTool = .select
 
         let angle = atan2(start.y - selectedRegion.center.y, start.x - selectedRegion.center.x)
@@ -444,6 +464,8 @@ struct EditorCanvasView: View {
             return nil
         }
 
+        // Some controls, like rotation, can extend past the visible image area,
+        // so certain interactions intentionally allow coordinates outside the frame.
         let x = (viewPoint.x - imageFrame.minX) / imageFrame.width * imageSize.width
         let y = (viewPoint.y - imageFrame.minY) / imageFrame.height * imageSize.height
         return CGPoint(x: x, y: y)

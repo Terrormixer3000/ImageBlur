@@ -1,6 +1,7 @@
 import CoreGraphics
 import Foundation
 
+/// Supported shapes for pixelation masks.
 enum BlurShape: String, CaseIterable, Identifiable {
     case rectangle
     case ellipse
@@ -10,13 +11,14 @@ enum BlurShape: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .rectangle: "Rechteck"
-        case .ellipse: "Ellipse"
-        case .lasso: "Lasso"
+        case .rectangle: localized("shape.rectangle")
+        case .ellipse: localized("shape.ellipse")
+        case .lasso: localized("shape.lasso")
         }
     }
 }
 
+/// The active editor tool shown in the toolbar and used by the canvas.
 enum EditorTool: String, CaseIterable, Identifiable {
     case select
     case rectangle
@@ -27,14 +29,15 @@ enum EditorTool: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .select: "Auswählen"
-        case .rectangle: "Rechteck"
-        case .ellipse: "Ellipse"
-        case .lasso: "Lasso"
+        case .select: localized("tool.select")
+        case .rectangle: localized("tool.rectangle")
+        case .ellipse: localized("tool.ellipse")
+        case .lasso: localized("tool.lasso")
         }
     }
 }
 
+/// Drag handles used for resizing rectangular bounding boxes.
 enum ResizeHandle: CaseIterable {
     case topLeft
     case topRight
@@ -42,6 +45,7 @@ enum ResizeHandle: CaseIterable {
     case bottomRight
 }
 
+/// A pixelation region stored entirely in image coordinates.
 struct BlurRegion: Identifiable, Equatable {
     let id: UUID
     var shape: BlurShape
@@ -75,6 +79,8 @@ struct BlurRegion: Identifiable, Equatable {
     }
 
     func transformedPath() -> CGPath {
+        // Geometry is stored in unrotated image space. Rotation is applied lazily
+        // when drawing, hit testing, and exporting.
         let base = CGMutablePath()
 
         switch shape {
@@ -130,6 +136,8 @@ struct BlurRegion: Identifiable, Equatable {
             return copy
         }
 
+        // Lasso points are scaled with the region's bounding box so freeform regions
+        // can be resized using the same handles as rectangles and ellipses.
         let oldRect = initial.rect.standardizedWithMinimumSize(1)
         let scaleX = clampedRect.width / oldRect.width
         let scaleY = clampedRect.height / oldRect.height
@@ -191,6 +199,7 @@ extension CGRect {
 
 extension CGPoint {
     func rotated(around center: CGPoint, angle: CGFloat) -> CGPoint {
+        // The canvas rotates points frequently for handles, hit testing, and export paths.
         let translatedX = x - center.x
         let translatedY = y - center.y
         let cosine = cos(angle)

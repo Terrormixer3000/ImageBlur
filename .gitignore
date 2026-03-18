@@ -25,6 +25,7 @@ DerivedData/
 *.dSYM.zip
 *.ipa
 *.xcarchive
+dist/
 
 # Logs and temp files
 *.log

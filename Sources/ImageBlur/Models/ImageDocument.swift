@@ -1,6 +1,7 @@
 import CoreGraphics
 import Foundation
 
+/// The loaded source image plus the metadata needed to export back in the original format.
 struct ImageDocument {
     let url: URL
     let cgImage: CGImage

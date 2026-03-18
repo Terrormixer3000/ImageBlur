@@ -1,14 +1,28 @@
 import AppKit
 import SwiftUI
 
+/// Drives the native AppKit window and menu setup for the SwiftUI editor.
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private let viewModel = EditorViewModel()
+    private let localization = LocalizationManager.shared
+    private let sparkleController = SparkleController()
     private var window: NSWindow?
+    private var languageObserver: NSObjectProtocol?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        languageObserver = NotificationCenter.default.addObserver(
+            forName: LocalizationManager.languageDidChangeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.buildMenu()
+            }
+        }
         buildMenu()
         createMainWindow()
+        installApplicationIcon()
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
     }
@@ -38,6 +52,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         viewModel.deleteSelectedRegion()
     }
 
+    @objc private func changeLanguage(_ sender: NSMenuItem) {
+        guard
+            let rawValue = sender.representedObject as? String,
+            let language = AppLanguage(rawValue: rawValue)
+        else {
+            return
+        }
+
+        localization.setLanguage(language)
+    }
+
     private func createMainWindowIfNeeded() {
         if window == nil {
             createMainWindow()
@@ -65,7 +90,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.window = window
     }
 
+    private func installApplicationIcon() {
+        guard let iconURL = Bundle.module.url(forResource: "AppIcon", withExtension: "icns"),
+              let iconImage = NSImage(contentsOf: iconURL)
+        else {
+            return
+        }
+
+        NSApp.applicationIconImage = iconImage
+    }
+
     private func buildMenu() {
+        // Menus are built manually because the app uses a fully programmatic AppKit entry point.
         let mainMenu = NSMenu()
         NSApp.mainMenu = mainMenu
 
@@ -73,43 +109,70 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         mainMenu.addItem(appMenuItem)
         let appMenu = NSMenu()
         appMenuItem.submenu = appMenu
+
+        let languageMenuItem = NSMenuItem(title: localized("menu.language"), action: nil, keyEquivalent: "")
+        let languageMenu = NSMenu(title: localized("menu.language"))
+        languageMenuItem.submenu = languageMenu
+        appMenu.addItem(languageMenuItem)
+
+        for language in AppLanguage.allCases {
+            let item = NSMenuItem(title: language.displayName, action: #selector(changeLanguage(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = language.rawValue
+            item.state = localization.language == language ? .on : .off
+            languageMenu.addItem(item)
+        }
+
+        appMenu.addItem(.separator())
+
         appMenu.addItem(
-            withTitle: "ImageBlur beenden",
+            withTitle: localized("menu.quit"),
             action: #selector(NSApplication.terminate(_:)),
             keyEquivalent: "q"
         )
 
+        let checkForUpdatesItem = NSMenuItem(
+            title: localized("menu.check-for-updates"),
+            action: nil,
+            keyEquivalent: ""
+        )
+        sparkleController.configureCheckForUpdatesMenuItem(checkForUpdatesItem)
+        appMenu.insertItem(checkForUpdatesItem, at: 2)
+        appMenu.insertItem(.separator(), at: 3)
+
         let fileMenuItem = NSMenuItem()
         mainMenu.addItem(fileMenuItem)
-        let fileMenu = NSMenu(title: "Ablage")
+        let fileMenu = NSMenu(title: localized("menu.file"))
         fileMenuItem.submenu = fileMenu
 
-        let openItem = NSMenuItem(title: "Bild öffnen", action: #selector(openImage(_:)), keyEquivalent: "o")
+        let openItem = NSMenuItem(title: localized("menu.open-image"), action: #selector(openImage(_:)), keyEquivalent: "o")
         openItem.target = self
         fileMenu.addItem(openItem)
 
-        let saveItem = NSMenuItem(title: "Speichern als Kopie", action: #selector(saveCopy(_:)), keyEquivalent: "S")
+        let saveItem = NSMenuItem(title: localized("menu.save-copy"), action: #selector(saveCopy(_:)), keyEquivalent: "S")
         saveItem.target = self
         fileMenu.addItem(saveItem)
 
         fileMenu.addItem(.separator())
 
-        let deleteItem = NSMenuItem(title: "Region löschen", action: #selector(deleteRegion(_:)), keyEquivalent: "\u{8}")
+        let deleteItem = NSMenuItem(title: localized("menu.delete-region"), action: #selector(deleteRegion(_:)), keyEquivalent: "\u{8}")
         deleteItem.target = self
         fileMenu.addItem(deleteItem)
 
         let editMenuItem = NSMenuItem()
         mainMenu.addItem(editMenuItem)
-        let editMenu = NSMenu(title: "Bearbeiten")
+        let editMenu = NSMenu(title: localized("menu.edit"))
         editMenuItem.submenu = editMenu
-        editMenu.addItem(withTitle: "Rückgängig", action: Selector(("undo:")), keyEquivalent: "z")
-        editMenu.addItem(withTitle: "Wiederholen", action: Selector(("redo:")), keyEquivalent: "Z")
+        editMenu.addItem(withTitle: localized("menu.undo"), action: Selector(("undo:")), keyEquivalent: "z")
+        editMenu.addItem(withTitle: localized("menu.redo"), action: Selector(("redo:")), keyEquivalent: "Z")
     }
 }
 
 @main
 enum ImageBlurApp {
     static func main() {
+        // The app uses NSApplication directly instead of SwiftUI's App lifecycle
+        // so AppKit window and menu customization stay predictable.
         let application = NSApplication.shared
         let delegate = AppDelegate()
         application.delegate = delegate

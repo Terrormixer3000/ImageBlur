@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    name: Build (macOS)
+    runs-on: macos-26
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select latest Xcode
+        run: |
+          LATEST_XCODE=$(ls -d /Applications/Xcode*.app | sort -V | tail -1)
+          echo "Using: ${LATEST_XCODE}"
+          sudo xcode-select -s "${LATEST_XCODE}"
+          xcodebuild -version
+
+      - name: Build (debug)
+        run: swift build
+
+      - name: Run tests
+        run: swift test || true

@@ -1,10 +1,13 @@
 import SwiftUI
 
+/// Main split view hosting the canvas and the lightweight inspector sidebar.
 struct ContentView: View {
     @ObservedObject var viewModel: EditorViewModel
     @Environment(\.undoManager) private var undoManager
 
     private var pixelationBinding: Binding<Double> {
+        // The toolbar slider edits the selected region when available,
+        // otherwise it changes the default value for newly created regions.
         Binding(
             get: { viewModel.selectedRegion?.pixelation ?? viewModel.defaultPixelation },
             set: { viewModel.updatePixelation(to: $0) }
@@ -29,7 +32,7 @@ struct ContentView: View {
                 Button(action: viewModel.openPanel) {
                     Image(systemName: "folder")
                 }
-                .help("Bild öffnen")
+                .help(localized("toolbar.open"))
 
                 Button {
                     _ = viewModel.saveCopyPanel()
@@ -37,7 +40,7 @@ struct ContentView: View {
                     Image(systemName: "square.and.arrow.up")
                 }
                 .disabled(!viewModel.hasImage)
-                .help("Als Kopie speichern")
+                .help(localized("toolbar.save-copy"))
             }
 
             ToolbarItem(placement: .primaryAction) {
@@ -47,11 +50,11 @@ struct ContentView: View {
         .dropDestination(for: URL.self) { items, _ in
             viewModel.handleDroppedFiles(items)
         }
-        .alert("Fehler", isPresented: Binding(
+        .alert(localized("alert.error.title"), isPresented: Binding(
             get: { viewModel.errorMessage != nil },
             set: { if !$0 { viewModel.errorMessage = nil } }
         )) {
-            Button("OK", role: .cancel) {
+            Button(localized("common.ok"), role: .cancel) {
                 viewModel.errorMessage = nil
             }
         } message: {
@@ -132,7 +135,7 @@ struct ContentView: View {
 
     private var zoomControls: some View {
         HStack(spacing: 4) {
-            toolbarIconButton(systemName: "minus.magnifyingglass", help: "Verkleinern", action: viewModel.zoomOut)
+            toolbarIconButton(systemName: "minus.magnifyingglass", help: localized("toolbar.zoom-out"), action: viewModel.zoomOut)
                 .disabled(!viewModel.hasImage)
 
             Button {
@@ -146,9 +149,9 @@ struct ContentView: View {
             .buttonStyle(.borderless)
             .foregroundStyle(viewModel.hasImage ? .primary : .secondary)
             .disabled(!viewModel.hasImage)
-            .help("Zoom zurücksetzen")
+            .help(localized("toolbar.reset-zoom"))
 
-            toolbarIconButton(systemName: "plus.magnifyingglass", help: "Vergrößern", action: viewModel.zoomIn)
+            toolbarIconButton(systemName: "plus.magnifyingglass", help: localized("toolbar.zoom-in"), action: viewModel.zoomIn)
                 .disabled(!viewModel.hasImage)
         }
         .padding(.horizontal, 4)
@@ -156,7 +159,7 @@ struct ContentView: View {
 
     private var pixelationControls: some View {
         HStack(spacing: 8) {
-            Label("Pixel", systemImage: "square.grid.3x3.fill")
+            Label(localized("toolbar.pixelation"), systemImage: "square.grid.3x3.fill")
                 .labelStyle(.iconOnly)
                 .foregroundStyle(.secondary)
 
@@ -164,6 +167,7 @@ struct ContentView: View {
                 value: pixelationBinding,
                 in: 1...80,
                 onEditingChanged: { editing in
+                    // Bracket slider drags so pixelation changes collapse into a single undo step.
                     if editing {
                         viewModel.beginPixelationChange()
                     } else {
@@ -210,26 +214,26 @@ struct ContentView: View {
 
     private var inspector: some View {
         VStack(alignment: .leading, spacing: 18) {
-            Text("Inspector")
+            Text(localized("inspector.title"))
                 .font(.headline)
 
             if let document = viewModel.document {
-                GroupBox("Bild") {
+                GroupBox(localized("inspector.image")) {
                     VStack(alignment: .leading, spacing: 12) {
-                        inspectorRow("Datei", value: document.url.lastPathComponent, allowWrapping: true)
-                        inspectorRow("Größe", value: "\(Int(document.size.width)) × \(Int(document.size.height)) px")
-                        inspectorRow("Format", value: document.fileExtension.uppercased())
+                        inspectorRow(localized("inspector.file"), value: document.url.lastPathComponent, allowWrapping: true)
+                        inspectorRow(localized("inspector.size"), value: "\(Int(document.size.width)) × \(Int(document.size.height)) px")
+                        inspectorRow(localized("inspector.format"), value: document.fileExtension.uppercased())
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
             } else {
-                Text("Kein Bild geladen")
+                Text(localized("inspector.no-image"))
                     .foregroundStyle(.secondary)
             }
 
-            GroupBox("Regionen") {
+            GroupBox(localized("inspector.regions")) {
                 if viewModel.regions.isEmpty {
-                    Text("Noch keine Verpixelungsbereiche angelegt.")
+                    Text(localized("inspector.no-regions"))
                         .foregroundStyle(.secondary)
                 } else {
                     List(selection: Binding(
@@ -251,7 +255,7 @@ struct ContentView: View {
                                         .foregroundStyle(.secondary)
                                 }
                                 .buttonStyle(.plain)
-                                .help("Region löschen")
+                                .help(localized("region.delete"))
                             }
                             .tag(region.id)
                         }

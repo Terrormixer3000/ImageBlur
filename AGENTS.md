@@ -1,23 +1,25 @@
 # AGENTS
 
-## Projektüberblick
-- `ImageBlur` ist eine native macOS-App in `SwiftUI`.
-- Ziel ist das nicht-destruktive Verpixeln von Bildausschnitten bei unveränderten Pixelabmessungen.
-- Unterstützte Formen im aktuellen Stand:
-  - Rechteck
+This file is a contributor-facing engineering guide for the ImageBlur repository.
+
+## Project Overview
+- `ImageBlur` is a native macOS app built with `SwiftUI`.
+- The goal is non-destructive pixelation of image regions without changing the original image dimensions.
+- Supported shapes in the current version:
+  - Rectangle
   - Ellipse
   - Lasso
-- Regionen können angelegt, ausgewählt, verschoben, skaliert, gedreht und gelöscht werden.
-- Beim Öffnen eines neuen Bildes mit ungespeicherten Änderungen muss eine Verwerfen-/Speichern-Abfrage erscheinen.
+- Regions can be created, selected, moved, resized, rotated, and deleted.
+- When opening another image while unsaved changes exist, the app must show a save/discard/cancel confirmation instead of silently replacing the current editing state.
 
-## Technischer Stack
+## Tech Stack
 - `Swift 6`
 - `Swift Package Manager`
-- `SwiftUI` für die App und den Editor
-- `Core Image` für die Pixelation
-- `ImageIO` für Laden und Export im Originalformat
+- `SwiftUI` for the app and editor UI
+- `Core Image` for pixelation
+- `ImageIO` for loading and exporting in the original format
 
-## Projektstruktur
+## Project Structure
 ```text
 Package.swift
 Sources/ImageBlur/
@@ -35,35 +37,47 @@ Sources/ImageBlur/
     └── EditorCanvasView.swift
 ```
 
-## Architekturregeln
-- Regionen werden immer in Bildkoordinaten gespeichert, nicht in View-Koordinaten.
-- Vorschau und Export sollen dieselbe Renderlogik verwenden.
-- Änderungen an Bildformat, Pixelabmessungen und Seitenverhältnis sind nicht erlaubt.
-- Export erfolgt als neue Datei im Eingabeformat.
-- Neue Bearbeitungsfunktionen sollen Undo/Redo unterstützen.
-- Bildwechsel darf bestehende Änderungen niemals stillschweigend verwerfen.
+## Architecture Rules
+- Store regions in image coordinates, not view coordinates.
+- Keep preview and export on the same rendering path.
+- Do not change image format, pixel dimensions, or aspect ratio during editing.
+- Export always writes a new file in the input format.
+- New editing features should integrate with undo/redo.
+- Replacing the current image must never silently discard existing edits.
 
-## Arbeitsregeln
-- Vor Änderungen zuerst `swift build` ausführen, wenn ein technischer Stand abgeglichen werden muss.
-- Bei Rendering-Änderungen immer sowohl Preview als auch Export prüfen.
-- Interaktionslogik im Canvas möglichst in kleine, nachvollziehbare Zustände halten.
-- Keine unnötigen Drittanbieter-Abhängigkeiten einführen.
-- Bestehende Nutzerfunktionen nicht stillschweigend vereinfachen oder entfernen.
-- Lokale Editor-Dateien wie `.vscode/` nicht committen.
+## Working Rules
+- Run `swift build` before finishing substantial changes.
+- For rendering changes, check both preview behavior and export behavior.
+- Keep canvas interaction logic in small, understandable states.
+- Avoid unnecessary third-party dependencies.
+- Do not silently simplify or remove existing user-facing behavior.
+- Do not commit local editor files such as `.vscode/`.
+- Keep public documentation aligned with actual app behavior and release scripts.
 
-## Bekannte Grenzen im aktuellen Stand
-- Lasso kann als Form erstellt, transformiert und gedreht werden, aber noch nicht punktweise editiert werden.
-- Winkelraster beim Drehen ist noch nicht umgesetzt.
-- Die App ist aktuell ein Einzelbild-Editor ohne Batch-Verarbeitung.
+## Open Source Repo Expectations
+- The repository is public and user-facing, so README and release workflows are part of the product.
+- CI should at minimum validate `swift build` and release packaging.
+- Tagged releases should produce an unsigned `.app.zip` artifact.
+- Community-facing files in `.github/` should stay concise and practical.
 
-## Verifikation
+## Known Limitations
+- Lasso shapes can be created, transformed, and rotated, but their points cannot be edited individually yet.
+- Angle snapping with `Shift` is not implemented yet.
+- The app is currently a single-image editor without batch processing.
+
+## Verification
 - Build:
   - `swift build`
-- Start:
+- Run:
   - `swift run`
+- Assemble app bundle:
+  - `./scripts/assemble_app.sh release`
+- Build release archive:
+  - `./scripts/build_release.sh v0.1.0`
 
-## Typische nächste Aufgaben
-- Punktbearbeitung für Lasso-Formen
-- Winkelraster mit `Shift`
-- Bessere Performance bei sehr großen Bildern
-- Zusätzliche Dateitypen und robustere Metadatenübernahme
+## Typical Next Tasks
+- Point editing for lasso shapes
+- Rotation angle snapping with `Shift`
+- Better performance with very large images
+- Additional file types and more robust metadata preservation
+- Screenshot automation or polished README media

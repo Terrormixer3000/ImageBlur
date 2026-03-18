@@ -1,0 +1,30 @@
+name: Feature request
+description: Suggest an improvement or new feature for ImageBlur
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you trying to solve?
+      placeholder: I need a faster way to edit lasso points after creating a region.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      placeholder: Add editable lasso points with drag handles in select mode.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      placeholder: I currently delete and redraw the lasso region from scratch.
+  - type: textarea
+    id: notes
+    attributes:
+      label: Additional context
+      description: Mockups, screenshots, workflow details, or prior art.

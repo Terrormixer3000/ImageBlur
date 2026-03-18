@@ -2,6 +2,7 @@ import CoreGraphics
 import CoreImage
 import Foundation
 
+/// Renders the preview and export image by compositing pixelated regions over the source image.
 final class BlurRenderer {
     private let ciContext = CIContext(options: [.cacheIntermediates: true])
 
@@ -14,6 +15,8 @@ final class BlurRenderer {
         var workingImage = CIImage(cgImage: document.cgImage)
 
         for region in regions {
+            // Each region reuses the current working image so overlapping masks
+            // stack in the same order as the editor state.
             let pixelated = workingImage.applyingFilter(
                 "CIPixellate",
                 parameters: [kCIInputScaleKey: max(region.pixelation, 1)]
@@ -58,6 +61,8 @@ final class BlurRenderer {
         context.setFillColor(gray: 0, alpha: 1)
         context.fill(CGRect(x: 0, y: 0, width: width, height: height))
 
+        // Core Graphics uses a flipped Y axis compared to the image-space coordinates
+        // used by the editor models, so the mask context is flipped before drawing the path.
         context.translateBy(x: 0, y: canvasSize.height)
         context.scaleBy(x: 1, y: -1)
         context.setFillColor(gray: 1, alpha: 1)

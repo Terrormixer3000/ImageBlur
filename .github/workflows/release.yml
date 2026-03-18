@@ -1,0 +1,114 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build & Release (macOS)
+    runs-on: macos-26
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Select latest Xcode
+        run: |
+          LATEST_XCODE=$(ls -d /Applications/Xcode*.app | sort -V | tail -1)
+          echo "Using: ${LATEST_XCODE}"
+          sudo xcode-select -s "${LATEST_XCODE}"
+          xcodebuild -version
+          swift --version
+
+      - name: Compute release metadata
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          VERSION="${TAG#v}"
+          ARCHIVE_NAME="ImageBlur-${TAG}-macos.zip"
+          ARCHIVE_PATH="dist/${ARCHIVE_NAME}"
+          DOWNLOAD_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/${ARCHIVE_NAME}"
+          APPCAST_BRANCH="appcast"
+          APPCAST_URL="https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/${APPCAST_BRANCH}/appcast.xml"
+
+          echo "TAG=${TAG}" >> "$GITHUB_ENV"
+          echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
+          echo "ARCHIVE_NAME=${ARCHIVE_NAME}" >> "$GITHUB_ENV"
+          echo "ARCHIVE_PATH=${ARCHIVE_PATH}" >> "$GITHUB_ENV"
+          echo "DOWNLOAD_URL=${DOWNLOAD_URL}" >> "$GITHUB_ENV"
+          echo "APPCAST_BRANCH=${APPCAST_BRANCH}" >> "$GITHUB_ENV"
+          echo "APPCAST_URL=${APPCAST_URL}" >> "$GITHUB_ENV"
+
+      - name: Build release archive
+        env:
+          APP_VERSION: ${{ env.VERSION }}
+          APP_BUILD_NUMBER: ${{ github.run_number }}
+          SPARKLE_APPCAST_URL: ${{ env.APPCAST_URL }}
+          SPARKLE_PUBLIC_ED_KEY: ${{ secrets.SPARKLE_PUBLIC_ED_KEY }}
+        run: ./scripts/build_release.sh "${GITHUB_REF_NAME}"
+
+      - name: Create GitHub Release and upload asset
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "ImageBlur ${{ env.VERSION }}"
+          body: |
+            ## ImageBlur ${{ env.VERSION }}
+
+            ### Installation
+            1. Download **${{ env.ARCHIVE_NAME }}** below.
+            2. Unzip and move **ImageBlur.app** to your `/Applications` folder.
+            3. On first launch, right-click the app and choose **Open** if macOS blocks it.
+
+            ### Updates
+            Automatic updates are provided through Sparkle in packaged releases.
+            You can also check manually via **ImageBlur → Check for Updates…**.
+
+            ### Requirements
+            - macOS 14 or later
+
+            ### Changes
+            See the [commit history](https://github.com/${{ github.repository }}/commits/${{ github.ref_name }}) for details.
+          files: ${{ env.ARCHIVE_PATH }}
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}
+
+      - name: Publish Sparkle appcast
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: |
+          APPCAST_DIR="${RUNNER_TEMP}/appcast"
+
+          git fetch origin "${APPCAST_BRANCH}" || true
+          if git ls-remote --exit-code --heads origin "${APPCAST_BRANCH}" >/dev/null 2>&1; then
+            git worktree add "${APPCAST_DIR}" "origin/${APPCAST_BRANCH}"
+            (
+              cd "${APPCAST_DIR}"
+              git checkout -B "${APPCAST_BRANCH}"
+            )
+          else
+            git worktree add --detach "${APPCAST_DIR}"
+            (
+              cd "${APPCAST_DIR}"
+              git checkout --orphan "${APPCAST_BRANCH}"
+              git rm -rf . >/dev/null 2>&1 || true
+            )
+          fi
+
+          APPCAST_LINK="https://github.com/${GITHUB_REPOSITORY}" \
+          ./scripts/update_appcast.sh "${APPCAST_DIR}" "${ARCHIVE_PATH}" "${DOWNLOAD_URL}" "${VERSION}" "${GITHUB_RUN_NUMBER}"
+
+          (
+            cd "${APPCAST_DIR}"
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add appcast.xml
+            git diff --cached --quiet && exit 0
+            git commit -m "Update appcast for ${TAG}"
+            git push origin HEAD:"${APPCAST_BRANCH}"
+          )

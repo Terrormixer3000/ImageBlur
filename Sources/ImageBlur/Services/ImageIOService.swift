@@ -4,6 +4,7 @@ import Foundation
 import ImageIO
 import UniformTypeIdentifiers
 
+/// User-facing image import and export errors.
 enum ImageIOServiceError: LocalizedError {
     case unsupportedFile
     case unableToReadImage
@@ -13,17 +14,18 @@ enum ImageIOServiceError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .unsupportedFile:
-            "Die Datei wird nicht als Bildformat unterstützt."
+            localized("error.unsupported-file")
         case .unableToReadImage:
-            "Das Bild konnte nicht geladen werden."
+            localized("error.unable-to-read-image")
         case .unableToCreateDestination:
-            "Die Ausgabedatei konnte nicht erstellt werden."
+            localized("error.unable-to-create-destination")
         case .saveFailed:
-            "Das Bild konnte nicht gespeichert werden."
+            localized("error.save-failed")
         }
     }
 }
 
+/// Loads source images with metadata and writes edited copies back in the original format.
 final class ImageIOService {
     private let ciContext = CIContext()
 
@@ -40,6 +42,8 @@ final class ImageIOService {
             throw ImageIOServiceError.unableToReadImage
         }
 
+        // Keeping the original metadata allows exports to preserve format-specific properties
+        // like color profiles and camera metadata where possible.
         let sourceProperties = (CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any]) ?? [:]
 
         return ImageDocument(
@@ -63,6 +67,7 @@ final class ImageIOService {
         var properties = document.properties
         properties[kCGImagePropertyOrientation] = 1
 
+        // JPEG has to be re-encoded after editing, so keep compression quality high by default.
         if UTType(document.typeIdentifier as String)?.conforms(to: .jpeg) == true {
             properties[kCGImageDestinationLossyCompressionQuality] = 0.95
         }
