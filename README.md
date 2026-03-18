@@ -31,11 +31,11 @@ Screenshots and short workflow GIFs are planned, but not included yet.
 
 ## Installation
 ### Download from GitHub Releases
-Tagged releases publish an unsigned macOS `.app.zip` artifact.
+Tagged releases publish an unsigned macOS `.dmg` artifact.
 
-1. Download the latest `ImageBlur-<version>-macos.zip` asset from the Releases page.
-2. Unzip the archive.
-3. Move `ImageBlur.app` to `/Applications` if desired.
+1. Download the latest `ImageBlur-<version>-macos.dmg` asset from the Releases page.
+2. Open the disk image.
+3. Drag `ImageBlur.app` to `/Applications`.
 4. On first launch, macOS may show the usual warning for an unsigned app. Use `Open` from Finder's context menu if needed.
 
 ### Build from source
@@ -50,12 +50,12 @@ swift build -c release
 ./scripts/assemble_app.sh release
 ```
 
-### Create a local release zip
+### Create a local release disk image
 ```bash
 ./scripts/build_release.sh v0.1.0
 ```
 
-This produces a zip archive in `dist/` that matches the format used by GitHub Releases.
+This produces a `.dmg` archive in `dist/` that matches the format used by GitHub Releases.
 
 ## Sparkle Updates
 ImageBlur includes optional Sparkle integration for packaged `.app` builds.

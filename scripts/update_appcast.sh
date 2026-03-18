@@ -17,6 +17,19 @@ APPCAST_TITLE="${APPCAST_TITLE:-ImageBlur Updates}"
 APPCAST_LINK="${APPCAST_LINK:-https://github.com/Terrormixer3000/image_blur}"
 APPCAST_DESCRIPTION="${APPCAST_DESCRIPTION:-Latest ImageBlur releases.}"
 MINIMUM_SYSTEM_VERSION="${MINIMUM_SYSTEM_VERSION:-14.0}"
+ARCHIVE_EXTENSION="${ARCHIVE_PATH##*.}"
+
+case "$ARCHIVE_EXTENSION" in
+  dmg)
+    CONTENT_TYPE="application/x-apple-diskimage"
+    ;;
+  zip)
+    CONTENT_TYPE="application/zip"
+    ;;
+  *)
+    CONTENT_TYPE="application/octet-stream"
+    ;;
+esac
 
 mkdir -p "$APPCAST_DIR"
 
@@ -98,7 +111,8 @@ awk \
   -v url="$DOWNLOAD_URL" \
   -v signature="$ED_SIGNATURE" \
   -v size="$FILE_SIZE" \
-  -v minimum_system_version="$MINIMUM_SYSTEM_VERSION" '
+  -v minimum_system_version="$MINIMUM_SYSTEM_VERSION" \
+  -v content_type="$CONTENT_TYPE" '
   /<\/channel>/ {
     print "    <item>"
     print "      <title>Version " version "</title>"
@@ -109,7 +123,7 @@ awk \
     print "      <enclosure url=\"" url "\""
     print "                 sparkle:edSignature=\"" signature "\""
     print "                 length=\"" size "\""
-    print "                 type=\"application/octet-stream\"/>"
+    print "                 type=\"" content_type "\"/>"
     print "    </item>"
   }
   { print }
