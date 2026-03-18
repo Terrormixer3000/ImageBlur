@@ -12,7 +12,11 @@ if [[ -n "${SWIFT_BUILD_FLAGS:-}" ]]; then
   EXTRA_BUILD_FLAGS=(${SWIFT_BUILD_FLAGS})
 fi
 
-BUILD_DIR="$(swift build "${EXTRA_BUILD_FLAGS[@]}" -c "$BUILD_CONFIGURATION" --show-bin-path)"
+if ((${#EXTRA_BUILD_FLAGS[@]} > 0)); then
+  BUILD_DIR="$(swift build "${EXTRA_BUILD_FLAGS[@]}" -c "$BUILD_CONFIGURATION" --show-bin-path)"
+else
+  BUILD_DIR="$(swift build -c "$BUILD_CONFIGURATION" --show-bin-path)"
+fi
 APP_DIR="$OUTPUT_DIR/ImageBlur.app"
 CONTENTS_DIR="$APP_DIR/Contents"
 MACOS_DIR="$CONTENTS_DIR/MacOS"
