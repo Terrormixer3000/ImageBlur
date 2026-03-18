@@ -4,8 +4,6 @@ ImageBlur is an open source macOS app for selectively pixelating parts of an ima
 
 Copyright (C) 2026 Terrormixer3000.
 
-## AI Disclaimer
-Parts of this project were created or refined with the help of AI-assisted development tools. All generated output should be treated as human-reviewed project code and documentation, not as an authoritative source on its own.
 
 ## Features
 - Open images via file dialog, app open events, or drag and drop
@@ -80,7 +78,7 @@ For a production Sparkle setup you still need:
 - update archives signed with Sparkle's EdDSA tooling
 - a release process that publishes both the archive and the appcast
 
-In this repository, the release workflow is set up to publish `appcast.xml` to a dedicated `appcast` branch instead of committing release metadata back to `main`.
+In this repository, the release workflow is set up to publish `appcast.xml` to a dedicated `sparkle-appcast` branch instead of committing release metadata back to `main`.
 
 ## Usage
 1. Launch the app.
@@ -125,6 +123,9 @@ Sources/ImageBlur/
 - Lasso shapes can be created and transformed as a whole, but their points cannot be edited individually yet.
 - Angle snapping while rotating is not implemented yet.
 - The app is currently a single-image editor without batch export.
+
+## AI Disclaimer
+Parts of this project were created or refined with the help of AI-assisted development tools. All generated output should be treated as human-reviewed project code and documentation, not as an authoritative source on its own.
 
 ## Contributing
 Contributions are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md) for the local workflow and contribution expectations.

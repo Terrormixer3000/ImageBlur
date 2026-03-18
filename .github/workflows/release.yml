@@ -34,7 +34,7 @@ jobs:
           ARCHIVE_NAME="ImageBlur-${TAG}-macos.zip"
           ARCHIVE_PATH="dist/${ARCHIVE_NAME}"
           DOWNLOAD_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/${ARCHIVE_NAME}"
-          APPCAST_BRANCH="appcast"
+          APPCAST_BRANCH="sparkle-appcast"
           APPCAST_URL="https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/${APPCAST_BRANCH}/appcast.xml"
 
           echo "TAG=${TAG}" >> "$GITHUB_ENV"
