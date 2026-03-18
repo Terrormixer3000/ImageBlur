@@ -15,6 +15,13 @@ struct EditorCanvasView: View {
 
     @State private var canvasAction: CanvasAction = .none
     @State private var draftRegion: BlurRegion?
+    @State private var magnifyStartZoom: CGFloat?
+
+    private let resizeHandleSize: CGFloat = 12
+    private let rotationHandleSize: CGFloat = 14
+    private let deleteHandleSize: CGFloat = 16
+    private let rotationHandleOffset: CGFloat = 28
+    private let deleteHandleOffset: CGFloat = 18
 
     var body: some View {
         GeometryReader { geometry in
@@ -89,7 +96,6 @@ struct EditorCanvasView: View {
 
     @ViewBuilder
     private func selectionAdornment(for region: BlurRegion, in imageFrame: CGRect) -> some View {
-        let handleScale = 1 / imageScale(for: imageFrame, imageSize: viewModel.document?.size ?? .zero)
         let overlayTransform = imageToViewTransform(for: imageFrame, imageSize: viewModel.document?.size ?? .zero)
         let selectionPath = Path(region.transformedPath()).applying(overlayTransform)
 
@@ -106,16 +112,33 @@ struct EditorCanvasView: View {
         }
 
         let rotationPoint = viewPoint(
-            for: region.rotationHandlePosition(offset: 28 * handleScale),
+            for: region.rotationHandlePosition(offset: rotationHandleOffset / imageScale(for: imageFrame, imageSize: viewModel.document?.size ?? .zero)),
             in: imageFrame,
             imageSize: viewModel.document?.size ?? .zero
         )
 
         Circle()
             .fill(Color.orange)
-            .frame(width: 14, height: 14)
+            .frame(width: rotationHandleSize, height: rotationHandleSize)
             .overlay(Circle().stroke(Color.white, lineWidth: 2))
             .position(rotationPoint)
+
+        let deletePoint = viewPoint(
+            for: region.deleteHandlePosition(offset: deleteHandleOffset / imageScale(for: imageFrame, imageSize: viewModel.document?.size ?? .zero)),
+            in: imageFrame,
+            imageSize: viewModel.document?.size ?? .zero
+        )
+
+        Circle()
+            .fill(Color.red)
+            .frame(width: deleteHandleSize, height: deleteHandleSize)
+            .overlay(
+                Image(systemName: "xmark")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundStyle(.white)
+            )
+            .overlay(Circle().stroke(Color.white, lineWidth: 2))
+            .position(deletePoint)
     }
 
     private func dragGesture(in canvasSize: CGSize) -> some Gesture {
@@ -142,7 +165,7 @@ struct EditorCanvasView: View {
                     viewModel.regions[index] = initialRegion.translated(by: delta)
                     viewModel.setPreviewNeedsRefresh()
                 case .resizing(let regionID, let handle, let initialRegion, _):
-                    guard let currentPoint = imagePoint(from: value.location, in: imageFrame, imageSize: document.size),
+                    guard let currentPoint = imagePointAllowingOutsideImage(from: value.location, in: imageFrame, imageSize: document.size),
                           let index = viewModel.regions.firstIndex(where: { $0.id == regionID })
                     else { return }
 
@@ -157,7 +180,7 @@ struct EditorCanvasView: View {
                     viewModel.regions[index] = initialRegion.applyingRectChange(newRect, from: initialRegion)
                     viewModel.setPreviewNeedsRefresh()
                 case .rotating(let regionID, let initialRegion, let initialAngle, _):
-                    guard let currentPoint = imagePoint(from: value.location, in: imageFrame, imageSize: document.size),
+                    guard let currentPoint = imagePointAllowingOutsideImage(from: value.location, in: imageFrame, imageSize: document.size),
                           let index = viewModel.regions.firstIndex(where: { $0.id == regionID })
                     else { return }
 
@@ -238,11 +261,22 @@ struct EditorCanvasView: View {
     private func magnifyGesture() -> some Gesture {
         MagnifyGesture()
             .onChanged { value in
-                viewModel.zoom = min(max(value.magnification * viewModel.zoom, 0.2), 8)
+                let startZoom = magnifyStartZoom ?? viewModel.zoom
+                if magnifyStartZoom == nil {
+                    magnifyStartZoom = startZoom
+                }
+                viewModel.zoom = min(max(startZoom * value.magnification, 0.2), 8)
+            }
+            .onEnded { _ in
+                magnifyStartZoom = nil
             }
     }
 
     private func beginAction(with value: DragGesture.Value, imageFrame: CGRect, imageSize: CGSize) {
+        if beginRotationIfNeeded(with: value, imageFrame: imageFrame, imageSize: imageSize) {
+            return
+        }
+
         switch viewModel.activeTool {
         case .rectangle, .ellipse:
             guard let start = imagePoint(from: value.startLocation, in: imageFrame, imageSize: imageSize) else {
@@ -258,29 +292,34 @@ struct EditorCanvasView: View {
             canvasAction = .drawingLasso(points: [start])
             draftRegion = lassoDraft(from: [start])
         case .select:
-            guard let start = imagePoint(from: value.startLocation, in: imageFrame, imageSize: imageSize) else {
-                canvasAction = .panning(initialPan: viewModel.panOffset)
-                return
-            }
-
             if let selectedRegion = viewModel.selectedRegion {
-                let rotationRadius: CGFloat = 10 / imageScale(for: imageFrame, imageSize: imageSize)
-                let rotationHandle = selectedRegion.rotationHandlePosition(offset: 28 / imageScale(for: imageFrame, imageSize: imageSize))
-                if hypot(rotationHandle.x - start.x, rotationHandle.y - start.y) < rotationRadius {
-                    let angle = atan2(start.y - selectedRegion.center.y, start.x - selectedRegion.center.x)
-                    canvasAction = .rotating(
-                        regionID: selectedRegion.id,
-                        initialRegion: selectedRegion,
-                        initialAngle: angle,
-                        initialSnapshot: viewModel.snapshot()
-                    )
+                let deleteHandlePoint = viewPoint(
+                    for: selectedRegion.deleteHandlePosition(offset: deleteHandleOffset / imageScale(for: imageFrame, imageSize: imageSize)),
+                    in: imageFrame,
+                    imageSize: imageSize
+                )
+                if hypot(deleteHandlePoint.x - value.startLocation.x, deleteHandlePoint.y - value.startLocation.y) <= deleteHandleSize {
+                    viewModel.deleteSelectedRegion()
+                    canvasAction = .none
+                    return
+                }
+
+                let rotationHandlePoint = viewPoint(
+                    for: selectedRegion.rotationHandlePosition(offset: rotationHandleOffset / imageScale(for: imageFrame, imageSize: imageSize)),
+                    in: imageFrame,
+                    imageSize: imageSize
+                )
+                if hypot(rotationHandlePoint.x - value.startLocation.x, rotationHandlePoint.y - value.startLocation.y) <= rotationHandleSize {
                     return
                 }
 
                 for handle in ResizeHandle.allCases {
-                    let point = selectedRegion.handlePosition(handle)
-                    let hitRadius: CGFloat = 10 / imageScale(for: imageFrame, imageSize: imageSize)
-                    if hypot(point.x - start.x, point.y - start.y) < hitRadius {
+                    let point = viewPoint(
+                        for: selectedRegion.handlePosition(handle),
+                        in: imageFrame,
+                        imageSize: imageSize
+                    )
+                    if hypot(point.x - value.startLocation.x, point.y - value.startLocation.y) <= resizeHandleSize {
                         canvasAction = .resizing(
                             regionID: selectedRegion.id,
                             handle: handle,
@@ -290,6 +329,11 @@ struct EditorCanvasView: View {
                         return
                     }
                 }
+            }
+
+            guard let start = imagePoint(from: value.startLocation, in: imageFrame, imageSize: imageSize) else {
+                canvasAction = .panning(initialPan: viewModel.panOffset)
+                return
             }
 
             if let region = hitTestRegion(at: start) {
@@ -304,6 +348,35 @@ struct EditorCanvasView: View {
                 canvasAction = .panning(initialPan: viewModel.panOffset)
             }
         }
+    }
+
+    private func beginRotationIfNeeded(with value: DragGesture.Value, imageFrame: CGRect, imageSize: CGSize) -> Bool {
+        guard let selectedRegion = viewModel.selectedRegion else {
+            return false
+        }
+
+        let rotationHandlePoint = viewPoint(
+            for: selectedRegion.rotationHandlePosition(offset: rotationHandleOffset / imageScale(for: imageFrame, imageSize: imageSize)),
+            in: imageFrame,
+            imageSize: imageSize
+        )
+
+        guard hypot(rotationHandlePoint.x - value.startLocation.x, rotationHandlePoint.y - value.startLocation.y) <= rotationHandleSize,
+              let start = imagePointAllowingOutsideImage(from: value.startLocation, in: imageFrame, imageSize: imageSize)
+        else {
+            return false
+        }
+
+        viewModel.activeTool = .select
+
+        let angle = atan2(start.y - selectedRegion.center.y, start.x - selectedRegion.center.x)
+        canvasAction = .rotating(
+            regionID: selectedRegion.id,
+            initialRegion: selectedRegion,
+            initialAngle: angle,
+            initialSnapshot: viewModel.snapshot()
+        )
+        return true
     }
 
     private func hitTestRegion(at point: CGPoint) -> BlurRegion? {
@@ -360,6 +433,14 @@ struct EditorCanvasView: View {
 
     private func imagePoint(from viewPoint: CGPoint, in imageFrame: CGRect, imageSize: CGSize) -> CGPoint? {
         guard imageFrame.contains(viewPoint) else {
+            return nil
+        }
+
+        return imagePointAllowingOutsideImage(from: viewPoint, in: imageFrame, imageSize: imageSize)
+    }
+
+    private func imagePointAllowingOutsideImage(from viewPoint: CGPoint, in imageFrame: CGRect, imageSize: CGSize) -> CGPoint? {
+        guard imageFrame.width > 0, imageFrame.height > 0 else {
             return nil
         }
 

@@ -170,6 +170,11 @@ struct BlurRegion: Identifiable, Equatable {
         CGPoint(x: rect.midX, y: rect.minY - offset)
             .rotated(around: center, angle: rotation)
     }
+
+    func deleteHandlePosition(offset: CGFloat) -> CGPoint {
+        CGPoint(x: rect.maxX + offset, y: rect.minY - offset)
+            .rotated(around: center, angle: rotation)
+    }
 }
 
 extension CGRect {

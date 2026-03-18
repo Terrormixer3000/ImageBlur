@@ -8,6 +8,7 @@
   - Ellipse
   - Lasso
 - Regionen können angelegt, ausgewählt, verschoben, skaliert, gedreht und gelöscht werden.
+- Beim Öffnen eines neuen Bildes mit ungespeicherten Änderungen muss eine Verwerfen-/Speichern-Abfrage erscheinen.
 
 ## Technischer Stack
 - `Swift 6`
@@ -40,6 +41,7 @@ Sources/ImageBlur/
 - Änderungen an Bildformat, Pixelabmessungen und Seitenverhältnis sind nicht erlaubt.
 - Export erfolgt als neue Datei im Eingabeformat.
 - Neue Bearbeitungsfunktionen sollen Undo/Redo unterstützen.
+- Bildwechsel darf bestehende Änderungen niemals stillschweigend verwerfen.
 
 ## Arbeitsregeln
 - Vor Änderungen zuerst `swift build` ausführen, wenn ein technischer Stand abgeglichen werden muss.
@@ -47,6 +49,7 @@ Sources/ImageBlur/
 - Interaktionslogik im Canvas möglichst in kleine, nachvollziehbare Zustände halten.
 - Keine unnötigen Drittanbieter-Abhängigkeiten einführen.
 - Bestehende Nutzerfunktionen nicht stillschweigend vereinfachen oder entfernen.
+- Lokale Editor-Dateien wie `.vscode/` nicht committen.
 
 ## Bekannte Grenzen im aktuellen Stand
 - Lasso kann als Form erstellt, transformiert und gedreht werden, aber noch nicht punktweise editiert werden.

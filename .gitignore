@@ -17,6 +17,7 @@ DerivedData/
 *.xcodeproj/xcuserdata/
 *.xcuserdatad/
 *.xcuserstate
+.vscode/
 
 # App bundles and archives
 *.app

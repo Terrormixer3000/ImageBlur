@@ -5,14 +5,16 @@ Native macOS-App zum selektiven Verpixeln von Bildausschnitten. Die App lädt ei
 ## Features
 - Bild öffnen per Dialog oder Drag-and-drop
 - Export als Kopie im Originalformat
+- Sicherheitsabfrage beim Öffnen eines neuen Bildes mit ungespeicherten Änderungen
 - Mehrere Verpixelungsbereiche pro Bild
 - Formen:
   - Rechteck
   - Ellipse
   - Lasso
 - Regionen verschieben, skalieren, drehen und löschen
+- Löschen direkt im Canvas über roten `x`-Handle oder in der Regionenliste
 - Einstellbare Pixelationsstärke pro Region
-- Zoom und Pan im Editor
+- Zoom und Pan im Editor, Zoom auf Mausposition fokussiert
 - Undo/Redo für zentrale Bearbeitungsschritte
 
 ## Anforderungen
@@ -36,8 +38,10 @@ swift run
    - `Lasso`
 4. Einen oder mehrere Bereiche auf dem Bild anlegen.
 5. Im Auswahlmodus Regionen verschieben, skalieren oder über den orangefarbenen Griff drehen.
-6. Pixelationsstärke über Toolbar oder Inspector anpassen.
-7. Mit `Speichern als Kopie` das bearbeitete Bild exportieren.
+6. Regionen über den roten `x`-Handle oder den Papierkorb in der Regionenliste löschen.
+7. Pixelationsstärke über den Slider in der Toolbar anpassen.
+8. Mit `Speichern als Kopie` das bearbeitete Bild exportieren.
+9. Wenn bereits Änderungen bestehen und ein neues Bild geöffnet wird, fragt die App vor dem Verwerfen der Änderungen nach.
 
 ## Unterstützte Formate
 - PNG

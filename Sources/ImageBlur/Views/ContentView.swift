@@ -4,6 +4,17 @@ struct ContentView: View {
     @ObservedObject var viewModel: EditorViewModel
     @Environment(\.undoManager) private var undoManager
 
+    private var pixelationBinding: Binding<Double> {
+        Binding(
+            get: { viewModel.selectedRegion?.pixelation ?? viewModel.defaultPixelation },
+            set: { viewModel.updatePixelation(to: $0) }
+        )
+    }
+
+    private var currentPixelationValue: Int {
+        Int((viewModel.selectedRegion?.pixelation ?? viewModel.defaultPixelation).rounded())
+    }
+
     var body: some View {
         HSplitView {
             EditorCanvasView(viewModel: viewModel)
@@ -13,66 +24,24 @@ struct ContentView: View {
                 .frame(minWidth: 260, idealWidth: 300, maxWidth: 340)
         }
         .background(Color(nsColor: .windowBackgroundColor))
-        .navigationTitle(viewModel.document?.url.lastPathComponent ?? "Image Blur")
         .toolbar {
-            ToolbarItemGroup(placement: .primaryAction) {
-                Button("Öffnen", action: viewModel.openPanel)
-                Button("Speichern als Kopie", action: viewModel.saveCopyPanel)
-                    .disabled(!viewModel.hasImage)
-
-                Divider()
-
-                Picker("Werkzeug", selection: $viewModel.activeTool) {
-                    ForEach(EditorTool.allCases) { tool in
-                        Text(tool.title).tag(tool)
-                    }
+            ToolbarItemGroup(placement: .navigation) {
+                Button(action: viewModel.openPanel) {
+                    Image(systemName: "folder")
                 }
-                .pickerStyle(.segmented)
-                .frame(width: 320)
-
-                Divider()
+                .help("Bild öffnen")
 
                 Button {
-                    viewModel.zoomOut()
+                    _ = viewModel.saveCopyPanel()
                 } label: {
-                    Image(systemName: "minus.magnifyingglass")
+                    Image(systemName: "square.and.arrow.up")
                 }
                 .disabled(!viewModel.hasImage)
-
-                Button {
-                    viewModel.resetViewport()
-                } label: {
-                    Image(systemName: "arrow.up.left.and.down.right.magnifyingglass")
-                }
-                .disabled(!viewModel.hasImage)
-
-                Button {
-                    viewModel.zoomIn()
-                } label: {
-                    Image(systemName: "plus.magnifyingglass")
-                }
-                .disabled(!viewModel.hasImage)
+                .help("Als Kopie speichern")
             }
 
-            ToolbarItem(placement: .automatic) {
-                HStack {
-                    Text("Pixel")
-                    Slider(
-                        value: Binding(
-                            get: { viewModel.selectedRegion?.pixelation ?? viewModel.defaultPixelation },
-                            set: { viewModel.updatePixelation(to: $0) }
-                        ),
-                        in: 1...80,
-                        onEditingChanged: { editing in
-                            if editing {
-                                viewModel.beginPixelationChange()
-                            } else {
-                                viewModel.endPixelationChange()
-                            }
-                        }
-                    )
-                    .frame(width: 180)
-                }
+            ToolbarItem(placement: .primaryAction) {
+                toolbarPalette
             }
         }
         .dropDestination(for: URL.self) { items, _ in
@@ -96,6 +65,149 @@ struct ContentView: View {
         }
     }
 
+    private var toolbarPalette: some View {
+        HStack(spacing: 10) {
+            toolMenu
+
+            Divider()
+                .frame(height: 22)
+
+            zoomControls
+
+            Divider()
+                .frame(height: 22)
+
+            pixelationControls
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(.regularMaterial, in: Capsule())
+        .overlay(
+            Capsule()
+                .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
+        )
+        .controlSize(.small)
+    }
+
+    private var toolMenu: some View {
+        Menu {
+            toolMenuItem(.select)
+            toolMenuItem(.rectangle)
+            toolMenuItem(.ellipse)
+            toolMenuItem(.lasso)
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: viewModel.activeTool.symbolName)
+                    .font(.system(size: 12, weight: .semibold))
+                    .frame(width: 16)
+                Text(viewModel.activeTool.title)
+                    .font(.system(size: 12, weight: .medium))
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+            .background(Color.primary.opacity(0.05), in: Capsule())
+        }
+        .menuStyle(.borderlessButton)
+        .fixedSize()
+    }
+
+    @ViewBuilder
+    private func toolMenuItem(_ tool: EditorTool) -> some View {
+        Button {
+            viewModel.activeTool = tool
+        } label: {
+            HStack {
+                Label(tool.title, systemImage: tool.symbolName)
+                Spacer()
+                if viewModel.activeTool == tool {
+                    Image(systemName: "checkmark")
+                        .foregroundStyle(Color.accentColor)
+                }
+            }
+        }
+    }
+
+    private var zoomControls: some View {
+        HStack(spacing: 4) {
+            toolbarIconButton(systemName: "minus.magnifyingglass", help: "Verkleinern", action: viewModel.zoomOut)
+                .disabled(!viewModel.hasImage)
+
+            Button {
+                viewModel.resetViewport()
+            } label: {
+                Text("\(Int((viewModel.zoom * 100).rounded()))%")
+                    .font(.system(size: 11, weight: .semibold, design: .rounded))
+                    .monospacedDigit()
+                    .frame(minWidth: 44)
+            }
+            .buttonStyle(.borderless)
+            .foregroundStyle(viewModel.hasImage ? .primary : .secondary)
+            .disabled(!viewModel.hasImage)
+            .help("Zoom zurücksetzen")
+
+            toolbarIconButton(systemName: "plus.magnifyingglass", help: "Vergrößern", action: viewModel.zoomIn)
+                .disabled(!viewModel.hasImage)
+        }
+        .padding(.horizontal, 4)
+    }
+
+    private var pixelationControls: some View {
+        HStack(spacing: 8) {
+            Label("Pixel", systemImage: "square.grid.3x3.fill")
+                .labelStyle(.iconOnly)
+                .foregroundStyle(.secondary)
+
+            Slider(
+                value: pixelationBinding,
+                in: 1...80,
+                onEditingChanged: { editing in
+                    if editing {
+                        viewModel.beginPixelationChange()
+                    } else {
+                        viewModel.endPixelationChange()
+                    }
+                }
+            )
+            .frame(width: 130)
+
+            Text("\(currentPixelationValue)")
+                .font(.system(size: 11, weight: .semibold, design: .rounded))
+                .monospacedDigit()
+                .foregroundStyle(.secondary)
+                .frame(minWidth: 26, alignment: .trailing)
+        }
+        .disabled(!viewModel.hasImage)
+    }
+
+    private func toolbarIconButton(systemName: String, help: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.system(size: 13, weight: .semibold))
+                .frame(width: 28, height: 24)
+        }
+        .buttonStyle(.borderless)
+        .help(help)
+    }
+
+    private func inspectorRow(_ title: String, value: String, allowWrapping: Bool = false) -> some View {
+        HStack(alignment: allowWrapping ? .top : .firstTextBaseline, spacing: 12) {
+            Text(title)
+                .foregroundStyle(.secondary)
+                .frame(width: 52, alignment: .leading)
+
+            Text(value)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .multilineTextAlignment(.leading)
+                .lineLimit(allowWrapping ? 3 : 1)
+                .truncationMode(.middle)
+                .textSelection(.enabled)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
     private var inspector: some View {
         VStack(alignment: .leading, spacing: 18) {
             Text("Inspector")
@@ -103,9 +215,12 @@ struct ContentView: View {
 
             if let document = viewModel.document {
                 GroupBox("Bild") {
-                    LabeledContent("Datei", value: document.url.lastPathComponent)
-                    LabeledContent("Größe", value: "\(Int(document.size.width)) × \(Int(document.size.height)) px")
-                    LabeledContent("Format", value: document.fileExtension.uppercased())
+                    VStack(alignment: .leading, spacing: 12) {
+                        inspectorRow("Datei", value: document.url.lastPathComponent, allowWrapping: true)
+                        inspectorRow("Größe", value: "\(Int(document.size.width)) × \(Int(document.size.height)) px")
+                        inspectorRow("Format", value: document.fileExtension.uppercased())
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
             } else {
                 Text("Kein Bild geladen")
@@ -129,6 +244,14 @@ struct ContentView: View {
                                 Spacer()
                                 Text("\(Int(region.pixelation))")
                                     .foregroundStyle(.secondary)
+                                Button {
+                                    viewModel.deleteRegion(withID: region.id)
+                                } label: {
+                                    Image(systemName: "trash")
+                                        .foregroundStyle(.secondary)
+                                }
+                                .buttonStyle(.plain)
+                                .help("Region löschen")
                             }
                             .tag(region.id)
                         }
@@ -137,38 +260,23 @@ struct ContentView: View {
                 }
             }
 
-            GroupBox("Auswahl") {
-                if let region = viewModel.selectedRegion {
-                    VStack(alignment: .leading, spacing: 12) {
-                        LabeledContent("Form", value: region.shape.title)
-                        LabeledContent("Drehung", value: "\(Int(region.rotation * 180 / .pi))°")
-                        LabeledContent("Pixelation", value: "\(Int(region.pixelation))")
-
-                        Slider(
-                            value: Binding(
-                                get: { region.pixelation },
-                                set: { viewModel.updatePixelation(to: $0) }
-                            ),
-                            in: 1...80,
-                            onEditingChanged: { editing in
-                                if editing {
-                                    viewModel.beginPixelationChange()
-                                } else {
-                                    viewModel.endPixelationChange()
-                                }
-                            }
-                        )
-
-                        Button("Region löschen", role: .destructive, action: viewModel.deleteSelectedRegion)
-                    }
-                } else {
-                    Text("Keine Region ausgewählt")
-                        .foregroundStyle(.secondary)
-                }
-            }
-
             Spacer()
         }
         .padding(18)
+    }
+}
+
+private extension EditorTool {
+    var symbolName: String {
+        switch self {
+        case .select:
+            "cursorarrow"
+        case .rectangle:
+            "rectangle"
+        case .ellipse:
+            "circle"
+        case .lasso:
+            "lasso"
+        }
     }
 }

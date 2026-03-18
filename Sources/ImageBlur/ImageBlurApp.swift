@@ -15,7 +15,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func application(_ application: NSApplication, open urls: [URL]) {
         guard let url = urls.first else { return }
-        viewModel.loadImage(from: url)
+        _ = viewModel.openImageReplacingCurrentIfNeeded(from: url)
         createMainWindowIfNeeded()
         window?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
@@ -57,6 +57,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
         window.center()
         window.title = "ImageBlur"
+        window.titleVisibility = .visible
+        window.titlebarAppearsTransparent = false
         window.contentViewController = hostingController
         window.isReleasedWhenClosed = false
         window.makeKeyAndOrderFront(nil)

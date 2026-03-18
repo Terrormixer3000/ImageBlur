@@ -25,6 +25,7 @@ final class EditorViewModel: ObservableObject {
     private let renderer = BlurRenderer()
     private weak var undoManager: UndoManager?
     private var pixelationChangeSnapshot: EditorSnapshot?
+    private var savedRegions: [BlurRegion] = []
 
     var selectedRegion: BlurRegion? {
         guard let selectedRegionID else { return nil }
@@ -33,6 +34,11 @@ final class EditorViewModel: ObservableObject {
 
     var hasImage: Bool {
         document != nil
+    }
+
+    var hasUnsavedChanges: Bool {
+        guard document != nil else { return false }
+        return regions != savedRegions
     }
 
     func attachUndoManager(_ undoManager: UndoManager?) {
@@ -49,12 +55,13 @@ final class EditorViewModel: ObservableObject {
             return
         }
 
-        loadImage(from: url)
+        _ = openImageReplacingCurrentIfNeeded(from: url)
     }
 
-    func saveCopyPanel() {
+    @discardableResult
+    func saveCopyPanel() -> Bool {
         guard let document, let renderedImage = renderer.render(document: document, regions: regions) else {
-            return
+            return false
         }
 
         let panel = NSSavePanel()
@@ -62,13 +69,16 @@ final class EditorViewModel: ObservableObject {
         panel.nameFieldStringValue = "\(document.fileName)-blurred.\(document.fileExtension)"
 
         guard panel.runModal() == .OK, let url = panel.url else {
-            return
+            return false
         }
 
         do {
             try imageIO.saveImage(renderedImage, from: document, to: url)
+            savedRegions = regions
+            return true
         } catch {
             errorMessage = error.localizedDescription
+            return false
         }
     }
 
@@ -77,14 +87,24 @@ final class EditorViewModel: ObservableObject {
             return false
         }
 
+        return openImageReplacingCurrentIfNeeded(from: url)
+    }
+
+    @discardableResult
+    func openImageReplacingCurrentIfNeeded(from url: URL) -> Bool {
+        guard confirmReplacementIfNeeded() else {
+            return false
+        }
+
         loadImage(from: url)
-        return true
+        return document != nil
     }
 
     func loadImage(from url: URL) {
         do {
             document = try imageIO.loadImage(from: url)
             regions = []
+            savedRegions = []
             selectedRegionID = nil
             zoom = 1
             panOffset = .zero
@@ -100,11 +120,11 @@ final class EditorViewModel: ObservableObject {
     }
 
     func zoomIn() {
-        zoom = min(zoom * 1.2, 8)
+        zoom = min(zoom * 1.08, 8)
     }
 
     func zoomOut() {
-        zoom = max(zoom / 1.2, 0.2)
+        zoom = max(zoom / 1.08, 0.2)
     }
 
     func setPreviewNeedsRefresh() {
@@ -117,9 +137,15 @@ final class EditorViewModel: ObservableObject {
 
     func deleteSelectedRegion() {
         guard let selectedRegionID else { return }
+        deleteRegion(withID: selectedRegionID)
+    }
+
+    func deleteRegion(withID regionID: UUID) {
         let before = snapshot()
-        regions.removeAll(where: { $0.id == selectedRegionID })
-        self.selectedRegionID = nil
+        regions.removeAll(where: { $0.id == regionID })
+        if selectedRegionID == regionID {
+            selectedRegionID = nil
+        }
         refreshPreview()
         registerUndo(from: before, actionName: "Region löschen")
     }
@@ -209,5 +235,28 @@ final class EditorViewModel: ObservableObject {
             target.restore(snapshot: inverseSnapshot, inverseSnapshot: snapshot, actionName: actionName)
         }
         undoManager?.setActionName(actionName)
+    }
+
+    private func confirmReplacementIfNeeded() -> Bool {
+        guard hasUnsavedChanges else {
+            return true
+        }
+
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.messageText = "Ungespeicherte Änderungen"
+        alert.informativeText = "Du hast Änderungen am aktuellen Bild, die noch nicht exportiert wurden. Möchtest du sie speichern, bevor ein anderes Bild geöffnet wird?"
+        alert.addButton(withTitle: "Speichern…")
+        alert.addButton(withTitle: "Verwerfen")
+        alert.addButton(withTitle: "Abbrechen")
+
+        switch alert.runModal() {
+        case .alertFirstButtonReturn:
+            return saveCopyPanel()
+        case .alertSecondButtonReturn:
+            return true
+        default:
+            return false
+        }
     }
 }
