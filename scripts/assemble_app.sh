@@ -32,6 +32,11 @@ if [[ -f "$ROOT_DIR/Resources/AppIcon.icns" ]]; then
   cp "$ROOT_DIR/Resources/AppIcon.icns" "$RESOURCES_DIR/AppIcon.icns"
 fi
 
+# SwiftPM does not produce an app bundle for us, so we need to add the bundle
+# framework rpath explicitly. Sparkle is linked as @rpath/Sparkle.framework/...
+# and would otherwise only search next to the executable.
+install_name_tool -add_rpath "@executable_path/../Frameworks" "$MACOS_DIR/ImageBlur"
+
 if [[ -n "${APP_VERSION:-}" ]]; then
   plutil -replace CFBundleShortVersionString -string "$APP_VERSION" "$CONTENTS_DIR/Info.plist"
 fi
