@@ -31,7 +31,7 @@ jobs:
         run: |
           TAG="${GITHUB_REF_NAME}"
           VERSION="${TAG#v}"
-          ARCHIVE_NAME="ImageBlur-${TAG}-macos.dmg"
+          ARCHIVE_NAME="ImageBlur-${TAG}-macos.zip"
           ARCHIVE_PATH="dist/${ARCHIVE_NAME}"
           DOWNLOAD_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/${ARCHIVE_NAME}"
           APPCAST_BRANCH="sparkle-appcast"
@@ -62,8 +62,8 @@ jobs:
 
             ## Installation
             1. Download **${{ env.ARCHIVE_NAME }}** below.
-            2. Open the disk image.
-            3. Drag **ImageBlur.app** to your `/Applications` folder.
+            2. Open the ZIP archive.
+            3. Move **ImageBlur.app** to your `/Applications` folder.
             4. On first launch, right-click the app and choose **Open** if macOS blocks it.
 
             ## Updates
