@@ -15,9 +15,10 @@
 "inspector.no-regions" = "Noch keine Verpixelungsbereiche angelegt.";
 "inspector.regions" = "Regionen";
 "inspector.size" = "Größe";
-"inspector.title" = "Inspector";
+"inspector.title" = "Inspektor";
 "menu.language" = "Sprache";
 "menu.check-for-updates" = "Nach Updates suchen…";
+"menu.automatic-updates" = "Automatisch nach Updates suchen";
 "menu.delete-region" = "Region löschen";
 "menu.edit" = "Bearbeiten";
 "menu.file" = "Ablage";

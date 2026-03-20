@@ -11,6 +11,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var languageObserver: NSObjectProtocol?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        sparkleController.startIfConfigured()
         languageObserver = NotificationCenter.default.addObserver(
             forName: LocalizationManager.languageDidChangeNotification,
             object: nil,
@@ -61,6 +62,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         localization.setLanguage(language)
+    }
+
+    @objc private func toggleAutomaticUpdateChecks(_ sender: NSMenuItem) {
+        sparkleController.toggleAutomaticChecks()
+        buildMenu()
     }
 
     private func createMainWindowIfNeeded() {
@@ -138,7 +144,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
         sparkleController.configureCheckForUpdatesMenuItem(checkForUpdatesItem)
         appMenu.insertItem(checkForUpdatesItem, at: 2)
-        appMenu.insertItem(.separator(), at: 3)
+
+        let automaticUpdatesItem = NSMenuItem(
+            title: localized("menu.automatic-updates"),
+            action: #selector(toggleAutomaticUpdateChecks(_:)),
+            keyEquivalent: ""
+        )
+        sparkleController.configureAutomaticUpdatesMenuItem(
+            automaticUpdatesItem,
+            target: self,
+            action: #selector(toggleAutomaticUpdateChecks(_:))
+        )
+        appMenu.insertItem(automaticUpdatesItem, at: 3)
+        appMenu.insertItem(.separator(), at: 4)
 
         let fileMenuItem = NSMenuItem()
         mainMenu.addItem(fileMenuItem)

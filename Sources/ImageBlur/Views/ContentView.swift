@@ -3,6 +3,7 @@ import SwiftUI
 /// Main split view hosting the canvas and the lightweight inspector sidebar.
 struct ContentView: View {
     @ObservedObject var viewModel: EditorViewModel
+    @ObservedObject private var localization = LocalizationManager.shared
     @Environment(\.undoManager) private var undoManager
 
     private var pixelationBinding: Binding<Double> {
@@ -19,6 +20,8 @@ struct ContentView: View {
     }
 
     var body: some View {
+        let _ = localization.language
+
         HSplitView {
             EditorCanvasView(viewModel: viewModel)
                 .frame(minWidth: 760, minHeight: 520)

@@ -18,6 +18,7 @@
 "inspector.title" = "Inspector";
 "menu.language" = "Language";
 "menu.check-for-updates" = "Check for Updates…";
+"menu.automatic-updates" = "Automatically Check for Updates";
 "menu.delete-region" = "Delete Region";
 "menu.edit" = "Edit";
 "menu.file" = "File";
