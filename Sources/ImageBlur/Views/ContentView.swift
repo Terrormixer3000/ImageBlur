@@ -232,12 +232,14 @@ struct ContentView: View {
             } else {
                 Text(localized("inspector.no-image"))
                     .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
 
             GroupBox(localized("inspector.regions")) {
                 if viewModel.regions.isEmpty {
                     Text(localized("inspector.no-regions"))
                         .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 } else {
                     List(selection: Binding(
                         get: { viewModel.selectedRegionID.map { Set([ $0 ]) } ?? [] },
