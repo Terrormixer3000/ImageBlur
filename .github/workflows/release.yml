@@ -58,8 +58,6 @@ jobs:
         with:
           name: "ImageBlur ${{ github.ref_name }}"
           body: |
-            # ImageBlur ${{ github.ref_name }}
-
             ImageBlur is a native macOS app for selectively pixelating sensitive image regions without changing the original image dimensions or file format.
 
             ## Installation
