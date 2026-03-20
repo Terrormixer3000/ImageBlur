@@ -29,5 +29,16 @@
                  length="4295302"
                  type="application/x-apple-diskimage"/>
     </item>
+    <item>
+      <title>Version 1.0.6</title>
+      <pubDate>Fri, 20 Mar 2026 06:10:13 +0000</pubDate>
+      <sparkle:version>7</sparkle:version>
+      <sparkle:shortVersionString>1.0.6</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <enclosure url="https://github.com/Terrormixer3000/ImageBlur/releases/download/v1.0.6/ImageBlur-v1.0.6-macos.zip"
+                 sparkle:edSignature="iOBMeHqSjDSMdNItfnS4FtU+TOfdgrJt+NzvnBUDXz5dcGQRfBwBxCoTS3oOGI8OkDYdbrMOn95YWAJ3vmk3Cg=="
+                 length="4088629"
+                 type="application/zip"/>
+    </item>
   </channel>
 </rss>
