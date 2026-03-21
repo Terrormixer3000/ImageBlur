@@ -49,6 +49,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         viewModel.saveCopyPanel()
     }
 
+    @objc private func save(_ sender: Any?) {
+        viewModel.save()
+    }
+
     @objc private func deleteRegion(_ sender: Any?) {
         viewModel.deleteSelectedRegion()
     }
@@ -167,9 +171,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         openItem.target = self
         fileMenu.addItem(openItem)
 
-        let saveItem = NSMenuItem(title: localized("menu.save-copy"), action: #selector(saveCopy(_:)), keyEquivalent: "S")
+        let saveItem = NSMenuItem(title: localized("menu.save"), action: #selector(save(_:)), keyEquivalent: "s")
         saveItem.target = self
         fileMenu.addItem(saveItem)
+
+        let saveCopyItem = NSMenuItem(title: localized("menu.save-copy"), action: #selector(saveCopy(_:)), keyEquivalent: "S")
+        saveCopyItem.target = self
+        fileMenu.addItem(saveCopyItem)
 
         fileMenu.addItem(.separator())
 

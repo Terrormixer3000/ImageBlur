@@ -38,12 +38,12 @@ struct ContentView: View {
                 .help(localized("toolbar.open"))
 
                 Button {
-                    _ = viewModel.saveCopyPanel()
+                    _ = viewModel.save()
                 } label: {
                     Image(systemName: "square.and.arrow.up")
                 }
                 .disabled(!viewModel.hasImage)
-                .help(localized("toolbar.save-copy"))
+                .help(localized("toolbar.save"))
             }
 
             ToolbarItem(placement: .primaryAction) {

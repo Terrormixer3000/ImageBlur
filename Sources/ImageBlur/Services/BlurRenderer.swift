@@ -17,10 +17,13 @@ final class BlurRenderer {
         for region in regions {
             // Each region reuses the current working image so overlapping masks
             // stack in the same order as the editor state.
-            let pixelated = workingImage.applyingFilter(
-                "CIPixellate",
-                parameters: [kCIInputScaleKey: max(region.pixelation, 1)]
-            )
+            let pixelated = workingImage
+                .clampedToExtent()
+                .applyingFilter(
+                    "CIPixellate",
+                    parameters: [kCIInputScaleKey: max(region.pixelation, 1)]
+                )
+                .cropped(to: extent)
 
             guard let maskImage = maskImage(for: region, canvasSize: document.size) else {
                 continue

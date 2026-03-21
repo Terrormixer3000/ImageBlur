@@ -25,6 +25,7 @@
 "menu.open-image" = "Bild öffnen";
 "menu.quit" = "ImageBlur beenden";
 "menu.redo" = "Wiederholen";
+"menu.save" = "Speichern";
 "menu.save-copy" = "Speichern als Kopie";
 "menu.undo" = "Rückgängig";
 "region.delete" = "Region löschen";
@@ -39,6 +40,7 @@
 "toolbar.open" = "Bild öffnen";
 "toolbar.pixelation" = "Verpixelung";
 "toolbar.reset-zoom" = "Zoom zurücksetzen";
+"toolbar.save" = "Speichern";
 "toolbar.save-copy" = "Als Kopie speichern";
 "toolbar.zoom-in" = "Vergrößern";
 "toolbar.zoom-out" = "Verkleinern";

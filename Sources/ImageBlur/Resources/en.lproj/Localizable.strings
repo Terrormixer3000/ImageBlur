@@ -25,6 +25,7 @@
 "menu.open-image" = "Open Image";
 "menu.quit" = "Quit ImageBlur";
 "menu.redo" = "Redo";
+"menu.save" = "Save";
 "menu.save-copy" = "Save Copy";
 "menu.undo" = "Undo";
 "region.delete" = "Delete region";
@@ -39,6 +40,7 @@
 "toolbar.open" = "Open image";
 "toolbar.pixelation" = "Pixelation";
 "toolbar.reset-zoom" = "Reset zoom";
+"toolbar.save" = "Save";
 "toolbar.save-copy" = "Save as copy";
 "toolbar.zoom-in" = "Zoom in";
 "toolbar.zoom-out" = "Zoom out";

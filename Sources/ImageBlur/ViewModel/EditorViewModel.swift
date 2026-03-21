@@ -10,6 +10,11 @@ struct EditorSnapshot {
     var selectedRegionID: UUID?
 }
 
+private struct ExportDestination {
+    let sourceURL: URL
+    let exportURL: URL
+}
+
 /// Owns the editor state, image lifecycle, preview rendering, and undo integration.
 @MainActor
 final class EditorViewModel: ObservableObject {
@@ -28,6 +33,7 @@ final class EditorViewModel: ObservableObject {
     private weak var undoManager: UndoManager?
     private var pixelationChangeSnapshot: EditorSnapshot?
     private var savedRegions: [BlurRegion] = []
+    private var exportDestination: ExportDestination?
 
     var selectedRegion: BlurRegion? {
         guard let selectedRegionID else { return nil }
@@ -61,6 +67,19 @@ final class EditorViewModel: ObservableObject {
     }
 
     @discardableResult
+    func save() -> Bool {
+        guard let document, let renderedImage = renderer.render(document: document, regions: regions) else {
+            return false
+        }
+
+        if let exportURL = exportDestination(for: document) {
+            return saveRenderedImage(renderedImage, from: document, to: exportURL)
+        }
+
+        return saveCopyPanel()
+    }
+
+    @discardableResult
     func saveCopyPanel() -> Bool {
         guard let document, let renderedImage = renderer.render(document: document, regions: regions) else {
             return false
@@ -68,20 +87,18 @@ final class EditorViewModel: ObservableObject {
 
         let panel = NSSavePanel()
         panel.allowedContentTypes = [UTType(document.typeIdentifier as String)].compactMap { $0 }
-        panel.nameFieldStringValue = "\(document.fileName)-\(localized("export.filename.suffix")).\(document.fileExtension)"
+        if let exportURL = exportDestination(for: document) {
+            panel.directoryURL = exportURL.deletingLastPathComponent()
+            panel.nameFieldStringValue = exportURL.lastPathComponent
+        } else {
+            panel.nameFieldStringValue = "\(document.fileName)-\(localized("export.filename.suffix")).\(document.fileExtension)"
+        }
 
         guard panel.runModal() == .OK, let url = panel.url else {
             return false
         }
 
-        do {
-            try imageIO.saveImage(renderedImage, from: document, to: url)
-            savedRegions = regions
-            return true
-        } catch {
-            errorMessage = error.localizedDescription
-            return false
-        }
+        return saveRenderedImage(renderedImage, from: document, to: url)
     }
 
     func handleDroppedFiles(_ urls: [URL]) -> Bool {
@@ -108,6 +125,9 @@ final class EditorViewModel: ObservableObject {
             document = try imageIO.loadImage(from: url)
             regions = []
             savedRegions = []
+            if exportDestination?.sourceURL != normalizedFileURL(url) {
+                exportDestination = nil
+            }
             selectedRegionID = nil
             zoom = 1
             panOffset = .zero
@@ -259,11 +279,38 @@ final class EditorViewModel: ObservableObject {
 
         switch alert.runModal() {
         case .alertFirstButtonReturn:
-            return saveCopyPanel()
+            return save()
         case .alertSecondButtonReturn:
             return true
         default:
             return false
         }
+    }
+
+    private func saveRenderedImage(_ renderedImage: CGImage, from document: ImageDocument, to url: URL) -> Bool {
+        do {
+            try imageIO.saveImage(renderedImage, from: document, to: url)
+            exportDestination = ExportDestination(
+                sourceURL: normalizedFileURL(document.url),
+                exportURL: normalizedFileURL(url)
+            )
+            savedRegions = regions
+            return true
+        } catch {
+            errorMessage = error.localizedDescription
+            return false
+        }
+    }
+
+    private func exportDestination(for document: ImageDocument) -> URL? {
+        guard let exportDestination, exportDestination.sourceURL == normalizedFileURL(document.url) else {
+            return nil
+        }
+
+        return exportDestination.exportURL
+    }
+
+    private func normalizedFileURL(_ url: URL) -> URL {
+        url.resolvingSymlinksInPath().standardizedFileURL
     }
 }
