@@ -37,6 +37,7 @@ swift run
 ```
 
 This creates a release ZIP in `dist/` containing `ImageBlur.app`.
+The packaged app is ad hoc signed by default so Sparkle can validate updates correctly.
 
 ## Updates
 Packaged releases can use Sparkle for update checks.
@@ -52,6 +53,8 @@ export SPARKLE_PUBLIC_ED_KEY="your-public-ed25519-key"
 ```
 
 Without both values, Sparkle stays disabled.
+
+If you want to replace the default ad hoc signature with your own certificate, set `APP_CODESIGN_IDENTITY` before building the archive.
 
 ## Supported Formats
 - PNG

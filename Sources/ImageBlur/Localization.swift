@@ -49,8 +49,8 @@ final class LocalizationManager: ObservableObject, @unchecked Sendable {
     }
 
     func localizedString(forKey key: String) -> String {
-        let preferredBundle = bundle(for: language) ?? bundle(for: .english) ?? .module
-        let fallback = bundle(for: .english) ?? .module
+        let preferredBundle = bundle(for: language) ?? bundle(for: .english) ?? AppResources.bundle
+        let fallback = bundle(for: .english) ?? AppResources.bundle
         let localizedValue = preferredBundle.localizedString(forKey: key, value: nil, table: nil)
 
         if localizedValue != key {
@@ -61,7 +61,7 @@ final class LocalizationManager: ObservableObject, @unchecked Sendable {
     }
 
     private func bundle(for language: AppLanguage) -> Bundle? {
-        guard let path = Bundle.module.path(forResource: language.rawValue, ofType: "lproj") else {
+        guard let path = AppResources.bundle.path(forResource: language.rawValue, ofType: "lproj") else {
             return nil
         }
 

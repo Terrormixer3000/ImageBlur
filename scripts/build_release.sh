@@ -22,6 +22,7 @@ else
 fi
 "$ROOT_DIR/scripts/assemble_app.sh" release "$DIST_DIR"
 "$ROOT_DIR/scripts/configure_sparkle.sh" "$DIST_DIR/ImageBlur.app"
+"$ROOT_DIR/scripts/sign_app.sh" "$DIST_DIR/ImageBlur.app"
 
 rm -f "$ARCHIVE_PATH"
 ditto -c -k --sequesterRsrc --keepParent "$DIST_DIR/ImageBlur.app" "$ARCHIVE_PATH"

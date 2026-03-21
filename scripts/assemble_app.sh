@@ -47,8 +47,6 @@ fi
 
 while IFS= read -r -d '' resource_bundle; do
   cp -R "$resource_bundle" "$RESOURCES_DIR/"
-  bundle_name="$(basename "$resource_bundle")"
-  ln -sfn "Contents/Resources/$bundle_name" "$APP_DIR/$bundle_name"
 done < <(find "$BUILD_DIR" -maxdepth 1 -type d -name '*.bundle' -print0)
 
 while IFS= read -r -d '' framework; do
@@ -56,5 +54,6 @@ while IFS= read -r -d '' framework; do
 done < <(find "$BUILD_DIR" -maxdepth 1 -type d -name '*.framework' -print0)
 
 chmod +x "$MACOS_DIR/ImageBlur"
+"$ROOT_DIR/scripts/sign_app.sh" "$APP_DIR"
 
 echo "Created $APP_DIR"
