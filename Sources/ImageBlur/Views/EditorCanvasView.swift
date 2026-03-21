@@ -90,9 +90,6 @@ struct EditorCanvasView: View {
 
                 path
                     .fill(Color.accentColor.opacity(isSelected ? 0.18 : 0.1))
-
-                path
-                    .stroke(isSelected ? Color.accentColor : Color.white.opacity(0.85), lineWidth: isSelected ? 2 : 1)
             }
 
             if let selectedRegion = viewModel.selectedRegion {
