@@ -73,5 +73,16 @@
                  length="4090654"
                  type="application/zip"/>
     </item>
+    <item>
+      <title>Version 1.0.10</title>
+      <pubDate>Sat, 21 Mar 2026 16:32:02 +0000</pubDate>
+      <sparkle:version>11</sparkle:version>
+      <sparkle:shortVersionString>1.0.10</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <enclosure url="https://github.com/Terrormixer3000/ImageBlur/releases/download/v1.0.10/ImageBlur-v1.0.10-macos.zip"
+                 sparkle:edSignature="FpvgJ6WwH3PsrmZRSMj0If9xlmQe+ILi+VvkHMTIRrJGeh+gQ2r3P1qVMDgYaDCk/6BsCWQ4gXrMHZuMdrQiCw=="
+                 length="4095805"
+                 type="application/zip"/>
+    </item>
   </channel>
 </rss>
