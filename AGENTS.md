@@ -57,8 +57,9 @@ Sources/ImageBlur/
 ## Open Source Repo Expectations
 - The repository is public and user-facing, so README and release workflows are part of the product.
 - CI should at minimum validate `swift build` and release packaging.
-- Tagged releases should produce an unsigned `.app.zip` artifact.
+- Tagged releases should produce an unsigned `.app.zip` artifact containing `ImageBlur.app`.
 - Community-facing files in `.github/` should stay concise and practical.
+- Keep the root documentation minimal. `README.md` and `AGENTS.md` are the primary maintained docs.
 
 ## Known Limitations
 - Lasso shapes can be created, transformed, and rotated, but their points cannot be edited individually yet.
@@ -80,4 +81,4 @@ Sources/ImageBlur/
 - Rotation angle snapping with `Shift`
 - Better performance with very large images
 - Additional file types and more robust metadata preservation
-- Screenshot automation or polished README media
+- Screenshot automation or polished release media
